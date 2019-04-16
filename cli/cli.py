@@ -41,22 +41,59 @@ def get_access_token():
     return data['access_token']
 
 
-def track(event_name, extra: dict = None):
+def track_profile():
+    _make_tracking_http_request(
+        'https://stories.asyncyapp.com/track/profile', {
+            'id': str(data['id']),
+            'profile': {
+                'Name': data['name'],
+                'Email': data.get('email'),
+                'GitHub Username': data.get('username'),
+                'Timezone': time.tzname[time.daylight]
+            }
+        })
+
+
+def _make_tracking_http_request(url, json_data):
+    """
+    Forks the HTTP call into the background.
+    The caller does not make the call, and this method returns just after
+    forking the process.
+
+    The child makes the call, and does not return back to the caller,
+    but instead just exits (sys.exit(0)). This is to ensure that whatever
+    needs to happen after this method is called, does not happen twice.
+    """
+    pid = os.fork()
+    if pid > 0:
+        # This is the parent process.
+        return
+
+    if not enable_reporting:
+        return
+
     try:
-        if extra is None:
-            extra = {}
-
-        extra['CLI version'] = version
-
-        if enable_reporting:
-            requests.post('https://stories.asyncyapp.com/track/event', json={
-                'id': str(data['id']),
-                'event_name': event_name,
-                'event_props': extra
-            })
+        requests.post(url, json=json_data)
     except Exception:
         # ignore issues with tracking
         pass
+
+    if pid == 0:
+        # This is the child process. Exit now.
+        sys.exit(0)
+
+
+def track(event_name, extra: dict = None):
+    if extra is None:
+        extra = {}
+
+    extra['CLI version'] = version
+    _make_tracking_http_request(
+        'https://stories.asyncyapp.com/track/event', {
+            'id': str(data['id']),
+            'event_name': event_name,
+            'event_props': extra
+        })
 
 
 def find_asyncy_yml():
@@ -175,22 +212,7 @@ def initiate_login():
 
     click.echo()
     track('Login Completed')
-    try:
-        if enable_reporting:
-            requests.post(
-                'https://stories.asyncyapp.com/track/profile',
-                json={
-                    'id': str(data['id']),
-                    'profile': {
-                        'Name': data['name'],
-                        'Email': data.get('email'),
-                        'GitHub Username': data.get('username'),
-                        'Timezone': time.tzname[time.daylight]
-                    }
-                })
-    except:
-        # Ignore tracking errors
-        pass
+    track_profile()
 
 
 def user() -> dict:
