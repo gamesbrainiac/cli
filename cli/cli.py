@@ -87,9 +87,8 @@ def _make_tracking_http_request(url, json_data):
         # ignore issues with tracking
         pass
 
-    if pid == 0:
-        # This is the child process. Exit now.
-        sys.exit(0)
+    # This is the child process. Exit now.
+    sys.exit(0)
 
 
 def track(event_name, extra: dict = None):
