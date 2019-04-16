@@ -64,6 +64,15 @@ def _make_tracking_http_request(url, json_data):
     but instead just exits (sys.exit(0)). This is to ensure that whatever
     needs to happen after this method is called, does not happen twice.
     """
+    if sys.platform != 'linux' and sys.platform != 'darwin':
+        try:
+            requests.post(url, json=json_data)
+        except Exception:
+            # ignore issues with tracking
+            pass
+
+        return
+
     pid = os.fork()
     if pid > 0:
         # This is the parent process.
