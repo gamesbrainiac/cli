@@ -127,36 +127,39 @@ def initiate_login():
     click.echo(url)
     click.echo()
 
-    with click_spinner.spinner():
-        while True:
+    while True:
+        with click_spinner.spinner():
             try:
                 url = 'https://stories.asyncyapp.com/github/oauth_callback'
+
                 res = requests.get(f'{url}?state={state}')
 
                 if res.text == 'null':
                     raise IOError()
 
                 res.raise_for_status()
-                if res.json().get('beta') is False:
-                    click.echo(
-                        'Hello! Asyncy is in private beta at this time.')
-                    click.echo(
-                        'We\'ve added you to our beta testers queue, '
-                        'and you should hear from us\nshortly via email'
-                        ' (which is linked to your GitHub account).'
-                    )
-                    sys.exit(1)
-
-                write(res.text, f'{home}/.config')
-                init()
-                break
             except IOError:
                 time.sleep(0.5)
                 # just try again
-                pass
+                continue
             except KeyboardInterrupt:
                 click.echo('Login failed. Please try again.')
                 sys.exit(1)
+
+        if res.json().get('beta') is False:
+            click.echo(
+                'Hello! Asyncy is in private beta at this time.')
+            click.echo(
+                'We\'ve added you to our beta testers queue, '
+                'and you should hear from us\nshortly via email'
+                ' (which is linked to your GitHub account).'
+            )
+            sys.exit(1)
+
+        write(res.text, f'{home}/.config')
+        init()
+        break
+
     click.echo(
         emoji.emojize(':waving_hand:') +
         f'  Welcome {data["name"]}!'
