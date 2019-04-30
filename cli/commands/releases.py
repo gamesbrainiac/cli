@@ -69,7 +69,7 @@ def rollback(version, app):
     if version and version[0] == 'v':
         version = version[1:]
     else:
-        click.echo("Invalid version given.")
+        click.echo('Invalid version given.')
         sys.exit(1)
 
     if not version:
